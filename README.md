@@ -2,105 +2,74 @@
 
 🎹 Servidor de detección de acordes de YouTube con IA (Chord-CNN-LSTM via ChordMiniApp).
 
-## Características
+## Quick Start
+
+```bash
+# Pull from Docker Hub
+docker pull saronni/chordtime:main
+
+# Run
+docker run -d --name chordtime-server -p 8193:8193 \
+  -e CHORDMINI_URL=http://chordmini-backend:8080 \
+  -e DOWNLOAD_DIR=/downloads \
+  saronni/chordtime:main
+
+# Access
+open http://localhost:8193/chordtime.html
+```
+
+## Documentation
+
+- **[DEPLOY.md](DEPLOY.md)** - Complete deployment & maintenance guide
+- **[LICENSE](LICENSE)** - MIT License
+
+## Features
 
 - **Descarga de audio** desde YouTube (yt-dlp + ffmpeg)
 - **Detección de acordes** mediante Chord-CNN-LSTM (modelo de deep learning)
-- **Transposición** matemática de acordes
 - **API REST** para integración con otras aplicaciones
 - **Frontend web** para preview rápido
 
-## Requisitos
+## Tech Stack
 
+- Python 3.12
 - Docker (linux/amd64)
-- Docker Compose
-- ChordMiniApp backend ejecutándose en `chordmini-backend:8080`
+- GitHub Actions → Docker Hub (CI/CD)
 
-## Configuración Rápida
+## Repository
 
-### 1. Variables de entorno
+- **GitHub:** https://github.com/saronni-hub/chordtime
+- **Docker Hub:** `saronni/chordtime`
+- **Workflow:** `.github/workflows/build-and-push.yml`
 
-```bash
-cp .env.example .env
-# Editar .env según necesidad
-```
+## Environment Variables
 
-### 2. Ejecutar con Docker Compose
-
-```bash
-# development (build local)
-docker-compose up --build
-
-# production (usar imagen de Docker Hub)
-docker-compose up -d
-```
-
-### 3. Acceder
-
-- Frontend: `http://localhost:8193/chordtime.html`
-- API: `http://localhost:8193/api/status`
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CHORDMINI_URL` | `http://chordmini-backend:8080` | ChordMiniApp backend |
+| `DOWNLOAD_DIR` | `/downloads` | Download directory |
 
 ## API Endpoints
 
-### Preview YouTube
 ```bash
-POST /api/yt/preview
-{
-  "url": "https://www.youtube.com/watch?v=...",
-  "transpose": 0,
-  "detect": true
-}
-```
-
-### Status
-```bash
+# Status
 GET /api/status
+
+# Preview YouTube
+POST /api/yt/preview
+{"url": "https://youtube.com/watch?v=...", "transpose": 0, "detect": true}
 ```
 
-## Estructura del Proyecto
-
-```
-chordtime/
-├── chordtime_server.py    # Servidor principal (Python HTTP)
-├── chordtime.html         # Frontend web
-├── config.py              # Configuración
-├── requirements.txt       # Dependencias Python
-├── Dockerfile             # Imagen Docker
-├── docker-compose.yml     # Orquestación
-├── .env.example           # Variables de entorno (template)
-└── .github/
-    └── workflows/
-        └── build-and-push.yml  # CI/CD (Docker Hub)
-```
-
-## Docker Hub
-
-Imagen pública: [saronni-hub/chordtime](https://hub.docker.com/r/saronni-hub/chordtime)
+## Development
 
 ```bash
-docker pull saronni-hub/chordtime:latest
-```
+# Clone
+git clone https://github.com/saronni-hub/chordtime.git
+cd chordtime
 
-## Desarrollo
-
-### Build local
-```bash
+# Build locally
 docker build -t chordtime:local .
+
+# Run locally
+docker-compose up --build
 ```
-
-### Variables de entorno para desarrollo
-
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `CHORDMINI_URL` | URL del backend ChordMiniApp | `http://localhost:8080` |
-| `DOWNLOAD_DIR` | Directorio para descargas | `/downloads` |
-
-## Notas
-
-- El servidor espera que **ChordMiniApp** esté disponible en la URL configurada via `CHORDMINI_URL`
-- Si ChordMiniApp no está disponible, se usa detección local (librosa + madmom) como fallback
-- Puerto 8193 mapeado al host para acceso externo
-
-## Licencia
-
-MIT
