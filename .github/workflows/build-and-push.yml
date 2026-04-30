@@ -28,7 +28,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: saronni-hub/chordtime
+          images: saronni/chordtime
           tags: |
             type=semver,pattern={{version}}
             type=ref,event=branch
@@ -41,5 +41,3 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

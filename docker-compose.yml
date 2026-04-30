@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   chordtime:
-    image: saronni-hub/chordtime:latest
+    image: saronni/chordtime:latest
     container_name: chordtime-server
     platform: linux/amd64
     ports:

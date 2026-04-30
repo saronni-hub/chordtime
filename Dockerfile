@@ -13,8 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --no-cache-dir Cython
 
-RUN curl -fsSL https://deno.land/install.sh | sh
-
 RUN curl -sL "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz" \
         -o /tmp/ffmpeg.tar.xz \
     && mkdir -p /tmp/ffmpeg_extracted \
@@ -32,8 +30,6 @@ RUN pip install --no-cache-dir git+https://github.com/CPJKU/madmom
 FROM python:3.12-slim-bookworm
 
 ENV PYTHONUNBUFFERED=1
-ENV DENO_INSTALL=/usr/local/lib/deno
-ENV PATH=$DENO_INSTALL/bin:$PATH
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
@@ -41,7 +37,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
-COPY --from=builder /usr/local/lib/deno /usr/local/lib/deno
 
 WORKDIR /app
 
