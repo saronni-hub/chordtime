@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChordTime Generator — MIDI · LRC · YouTube</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+  }
+  h1 { color: #7fff7f; margin-bottom: 8px; font-size: 1.5em; }
+  .subtitle { color: #888; margin-bottom: 30px; font-size: 0.9em; }
+
+  .tab-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    width: 100%;
+    max-width: 600px;
+  }
+  .tab {
+    flex: 1;
+    background: #222;
+    color: #888;
+    border: none;
+    border-radius: 8px 8px 0 0;
+    padding: 10px 8px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .tab.active { background: #16213e; color: #7fff7f; }
+  .tab:hover:not(.active) { color: #ccc; }
+
+  .tab-content { width: 100%; max-width: 600px; display: none; }
+  .tab-content.active { display: block; }
+
+  /* --- Drop zones --- */
+  .uploaders { display: flex; gap: 12px; margin-bottom: 16px; }
+  .uploader {
+    flex: 1;
+    background: #16213e;
+    border: 2px dashed #444;
+    border-radius: 12px;
+    padding: 20px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.85em;
+  }
+  .uploader:hover, .uploader.has-file { border-color: #7fff7f; }
+  .uploader .icon { font-size: 28px; margin-bottom: 8px; }
+  .uploader .label { color: #888; }
+  .uploader .filename { font-size: 0.75em; color: #7fff7f; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .uploader.has-file .label { color: #7fff7f; }
+  input[type="file"] { display: none; }
+
+  .drop-zone {
+    width: 100%;
+    border: 2px dashed #7fff7f44;
+    border-radius: 16px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #16213e;
+    margin-bottom: 16px;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: #7fff7f; background: #1a2a4e; }
+  .drop-zone .icon { font-size: 40px; margin-bottom: 12px; }
+  .drop-zone .label { font-size: 1em; color: #ccc; }
+  .drop-zone .hint { font-size: 0.78em; color: #666; margin-top: 6px; }
+
+  /* --- Transpose slider --- */
+  .transpose-section {
+    background: #16213e;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .transpose-section .label {
+    color: #888;
+    font-size: 0.85em;
+    white-space: nowrap;
+  }
+  .transpose-section .semitone-display {
+    min-width: 60px;
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #7fff7f;
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 6px;
+    background: #333;
+    border-radius: 3px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #7fff7f;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .transpose-section .pitch-hint {
+    font-size: 0.72em;
+    color: #555;
+  }
+
+  /* --- YouTube --- */
+  .yt-section { background: #16213e; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+  .yt-section h3 { color: #7fff7f; margin-bottom: 16px; font-size: 1em; }
+  .yt-url-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .yt-url-row input {
+    flex: 1;
+    background: #0d1f3e;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: #e0e0e0;
+    font-size: 0.95em;
+    outline: none;
+  }
+  .yt-url-row input:focus { border-color: #7fff7f; }
+  .yt-url-row input::placeholder { color: #555; }
+  .yt-formats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .format-btn {
+    background: #0d1f3e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 0.82em;
+    transition: all 0.2s;
+  }
+  .format-btn:hover { border-color: #7fff7f; color: #7fff7f; }
+  .format-btn.selected { background: #7fff7f; border-color: #7fff7f; color: #1a1a2e; font-weight: bold; }
+  .yt-search-results { display: none; margin-bottom: 16px; max-height: 300px; overflow-y: auto; }
+  .yt-search-results.visible { display: block; }
+  .yt-search-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #7fff7f22; cursor: pointer; transition: background 0.15s; }
+  .yt-search-item:hover { background: #7fff7f11; }
+  .yt-search-item .thumb { width: 80px; height: 45px; background: #222; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .yt-search-item .info { flex: 1; min-width: 0; }
+  .yt-search-item .title { color: #e0e0e0; font-size: 0.85em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .yt-search-item .meta { color: #666; font-size: 0.75em; margin-top: 2px; }
+  .yt-search-item .duration { color: #7fff7f; font-size: 0.8em; flex-shrink: 0; }
+  .yt-search-item:hover .title { color: #7fff7f; }
+
+    background: #0d1f3e;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .yt-info.visible { display: block; }
+  .yt-info .title { color: #e0e0e0; font-size: 0.95em; margin-bottom: 8px; }
+  .yt-info .meta { color: #666; font-size: 0.8em; }
+  .yt-download-progress { display: none; margin-top: 12px; }
+  .yt-download-progress.visible { display: block; }
+  .yt-link-btn {
+    display: inline-block;
+    background: #7fff7f;
+    color: #1a1a2e;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 0.9em;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    margin-top: 12px;
+  }
+
+  /* --- Progress --- */
+  .progress-wrap { display: none; margin-bottom: 20px; }
+  .progress-wrap.visible { display: block; }
+  .progress-bar { height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; background: #7fff7f; width: 0%; transition: width 0.3s; }
+  .progress-text { font-size: 0.85em; color: #888; text-align: center; }
+
+  /* --- Error --- */
+  .error-msg {
+    background: #3a1010;
+    border: 1px solid #7f3f3f;
+    border-radius: 10px;
+    padding: 16px;
+    color: #ff7f7f;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .error-msg.visible { display: block; }
+
+  /* --- Results --- */
+  .results { display: none; margin-bottom: 20px; }
+  .results.visible { display: block; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat { background: #16213e; border-radius: 12px; padding: 16px; text-align: center; }
+  .stat .value { font-size: 1.8em; font-weight: bold; color: #7fff7f; }
+  .stat .label { font-size: 0.72em; color: #666; text-transform: uppercase; margin-top: 4px; }
+
+  .chord-list { background: #16213e; border-radius: 12px; padding: 16px; max-height: 400px; overflow-y: auto; margin-bottom: 20px; }
+  .chord-list table { width: 100%; border-collapse: collapse; }
+  .chord-list th {
+    text-align: left; font-size: 0.75em; color: #666; text-transform: uppercase;
+    padding: 8px 12px; border-bottom: 1px solid #333; position: sticky; top: 0;
+    background: #16213e;
+  }
+  .chord-list td { padding: 10px 12px; font-size: 0.9em; border-bottom: 1px solid #222; }
+  .chord-list tr:last-child td { border-bottom: none; }
+  .chord-list .time { color: #888; font-family: monospace; font-size: 0.85em; }
+  .chord-list .chord { color: #7fff7f; font-weight: bold; }
+  .chord-list .lyric { color: #ccc; }
+  .chord-list .has-lyric td { background: #0d1f3e; }
+
+  .preview-json {
+    background: #0d1f3e;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: monospace;
+    font-size: 0.8em;
+    color: #aaa;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    white-space: pre;
+    display: none;
+  }
+  .preview-json.visible { display: block; }
+
+  .btn {
+    display: inline-block;
+    background: #7fff7f;
+    color: #1a1a2e;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn.secondary { background: #333; color: #ccc; }
+  .yt-chord-panel { margin-top: 20px; padding: 15px; background: #1e1e1e; border-radius: 8px; }
+  .section-title { color: #e0e0e0; font-size: 0.95em; margin-bottom: 10px; font-weight: 600; }
+  .chord-list-yt { max-height: 240px; overflow-y: auto; margin-bottom: 15px; }
+  .chord-row { display: flex; gap: 8px; padding: 4px 8px; border-bottom: 1px solid #333; font-size: 0.9em; align-items: center; }
+  .chord-num { color: #888; width: 24px; flex-shrink: 0; }
+  .chord-time { color: #aaa; width: 50px; font-family: monospace; flex-shrink: 0; }
+  .chord-name { color: #7ec8e3; font-weight: bold; flex: 1; }
+  .chord-name-input {
+    background: #2a2a2a; border: 1px solid #444; color: #7ec8e3;
+    padding: 2px 6px; border-radius: 4px; font-size: 0.95em; font-weight: bold;
+    width: 80px; flex: 1;
+  }
+  .chord-name-input:focus { border-color: #7fff7f; outline: none; }
+  .chord-del-btn {
+    background: none; border: none; color: #ff6666; cursor: pointer;
+    font-size: 0.8em; padding: 2px 6px; flex-shrink: 0;
+  }
+  .chord-del-btn:hover { color: #ff0000; }
+  .yt-panel-actions { display: flex; gap: 8px; margin-bottom: 12px; }
+  .lrc-section { margin: 15px 0; }
+  .yt-lrc-upload {
+    display: inline-block;
+    padding: 10px 16px;
+    background: #2a2a2a;
+    border: 2px dashed #7fff7f44;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #888;
+    font-size: 0.85em;
+    margin-bottom: 8px;
+  }
+  .yt-lrc-upload:hover { border-color: #7fff7f; color: #7fff7f; }
+  .yt-lrc-upload.has-file { border-color: #7fff7f; color: #7fff7f; }
+  #ytLrcPreview { color: #7fff7f; font-size: 0.8em; margin-bottom: 4px; min-height: 18px; }
+
+  #ytJsonPreview { background: #1a1a1a; color: #7ec8e3; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 0.8em; max-height: 300px; overflow-y: auto; white-space: pre; margin: 15px 0; }
+</style>
+</head>
+<body>
+
+<h1>🎹 ChordTime Generator</h1>
+<p class="subtitle">MIDI + LRC + YouTube → JSON</p>
+
+<div class="tab-bar">
+  <button class="tab active" id="tabYouTube" onclick="showTab('YouTube')">🎬 YouTube</button>
+  <button class="tab" id="tabMIDI" onclick="showTab('MIDI')">🎹 MIDI</button>
+</div>
+
+<!-- ========== YOUTUBE TAB ========== -->
+<div class="tab-content active" id="contentYouTube">
+  <div class="yt-section">
+    <h3>Descargar desde YouTube</h3>
+    <div class="yt-url-row">
+      <input type="text" id="ytSearchQuery" placeholder=" Buscar canción..." novalidate="novalidate" autocorrect="off" autocapitalize="none" />
+      <button class="btn" id="ytSearchBtn" onclick="ytSearch()">🔍</button>
+    </div>
+    <div class="yt-search-results" id="ytSearchResults"></div>
+    <div class="yt-url-row" id="ytUrlRow" style="display:none">
+      <input type="text" id="ytUrl" placeholder="O pega un enlace directo de YouTube..." novalidate="novalidate" autocorrect="off" autocapitalize="none" />
+      <button class="btn secondary" id="ytUrlToggle" onclick="showManualUrl()">🔗 Enlace</button>
+    </div>
+    <div class="yt-formats" id="ytFormats">
+      <button class="format-btn selected" data-format="mp3" data-quality="best" onclick="selectFormat(this)">🎵 MP3 (mejor)</button>
+      <button class="format-btn" data-format="mp3" data-quality="192" onclick="selectFormat(this)">🎵 MP3 192kbps</button>
+      <button class="format-btn" data-format="mp3" data-quality="128" onclick="selectFormat(this)">🎵 MP3 128kbps</button>
+      <button class="format-btn" data-format="mp4" data-quality="720" onclick="selectFormat(this)">🎬 MP4 720p</button>
+      <button class="format-btn" data-format="mp4" data-quality="480" onclick="selectFormat(this)">🎬 MP4 480p</button>
+      <button class="format-btn" data-format="mp4" data-quality="360" onclick="selectFormat(this)">🎬 MP4 360p</button>
+    </div>
+    <div class="yt-info" id="ytInfo">
+      <div class="title" id="ytTitle"></div>
+      <div class="meta" id="ytMeta"></div>
+    </div>
+    <button class="btn" id="ytPreviewBtn" onclick="ytPreview()" style="display:none; background:#e67e22">🎸 Preview Acordes</button>
+    <button class="btn" id="ytDownloadBtn" onclick="ytDownload()" style="display:none">⬇️ Descargar MP3</button>
+    <div class="yt-download-progress" id="ytProgress">
+      <div class="progress-text" id="ytProgressText">Descargando…</div>
+      <div class="progress-bar"><div class="progress-fill" id="ytProgressFill"></div></div>
+    </div>
+    </div>
+    <div class="transpose-section" id="ytTransposeSection" style="display:none">
+      <span class="label">🎚️ Transpose:</span>
+      <input type="range" id="ytTransposeSlider" min="-12" max="12" value="0" oninput="updateTransposeDisplay(this.value)">
+      <span class="semitone-display" id="ytTransposeDisplay">0</span>
+      <span class="label">semitonos</span>
+      <span class="pitch-hint">Offset:</span>
+      <input type="number" id="ytOffset" value="0.0" step="0.1" style="width:50px; background:#0d1f3e; color:white; border:1px solid #333; border-radius:4px;" onchange="generateYtJson()">
+      <span class="pitch-hint">s</span>
+    </div>
+    <div class="lrc-section" id="ytLrcSection" style="display:none">
+      <div class="section-title">📝 Letra LRC (opcional)</div>
+      <div class="yt-lrc-upload" id="ytLrcUploader" onclick="document.getElementById('ytLrcFileInput').click()">
+        <span id="ytLrcFilename">📄 Subir archivo .lrc</span>
+      </div>
+      <input type="file" id="ytLrcFileInput" accept=".lrc,.txt" style="display:none" onchange="handleYtLrcFile(this.files[0])" />
+      <div id="ytLrcPreview"></div>
+      <textarea id="ytLrcText" placeholder="...o pega la letra aquí: [00:00.00]Letra" rows="4" style="margin-top:8px; width:100%; background:#0d1f3e; border:1px solid #333; color:#e0e0e0; border-radius:8px; padding:8px; font-family:monospace; font-size:0.85em;"></textarea>
+      <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+        <span class="pitch-hint">⏱ Offset letra:</span>
+        <input type="number" id="ytLrcOffset" value="0.0" step="0.1" style="width:60px; background:#0d1f3e; color:white; border:1px solid #333; border-radius:4px; padding:2px 4px;">
+        <span class="pitch-hint">s (negativo = adelantar letra)</span>
+      </div>
+      <button class="btn" style="margin-top:12px; width:100%" onclick="generateYtJson()">🔗 Mezclar con Letras</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MIDI TAB ========== -->
+<div class="tab-content" id="contentMIDI">
+  <div class="uploaders">
+    <div class="uploader" id="midiUploader" onclick="midiInput.click()">
+      <div class="icon">🎹</div>
+      <div class="label" id="midiLabel">MIDI file</div>
+      <div class="filename" id="midiFilename"></div>
+    </div>
+    <div class="uploader" id="lrcUploader" onclick="lrcInput.click()">
+      <div class="icon">📝</div>
+      <div class="label" id="lrcLabel">Letra LRC (opcional)</div>
+      <div class="filename" id="lrcFilename"></div>
+    </div>
+  </div>
+  <input type="file" id="midiInput" accept=".mid,.midi">
+  <input type="file" id="lrcInput" accept=".lrc,.txt">
+
+  <div class="transpose-section" id="midiTransposeSection" style="display:none">
+    <span class="label">🎚️ Transpose:</span>
+    <input type="range" id="midiTransposeSlider" min="-12" max="12" value="0" oninput="updateMidiTransposeDisplay(this.value)">
+    <span class="semitone-display" id="midiTransposeDisplay">0</span>
+    <span class="label">semitonos</span>
+    <span class="pitch-hint">Offset acordes:</span>
+    <input type="number" id="midiOffset" value="0.0" step="0.1" style="width:50px; background:#0d1f3e; color:white; border:1px solid #333; border-radius:4px;" onchange="tryProcess()">
+    <span class="pitch-hint">s &nbsp;|&nbsp; Offset letra:</span>
+    <input type="number" id="midiLrcOffset" value="0.0" step="0.1" style="width:50px; background:#0d1f3e; color:white; border:1px solid #333; border-radius:4px;" onchange="tryProcess()">
+    <span class="pitch-hint">s</span>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-text" id="progressText">Procesando…</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+  <div class="error-msg" id="errorMsg"></div>
+
+</div>
+
+<div class="results" id="results">
+  <div class="stats">
+    <div class="stat"><div class="value" id="statChords">0</div><div class="label">Acordes</div></div>
+    <div class="stat"><div class="value" id="statDuration">0:00</div><div class="label">Duración</div></div>
+    <div class="stat"><div class="value" id="statBPM">—</div><div class="label">BPM</div></div>
+    <div class="stat"><div class="value" id="statSource">—</div><div class="label">Método</div></div>
+    <div class="stat" id="statLyricsWrap" style="display:none"><div class="value" id="statLyrics">0</div><div class="label">Letras</div></div>
+  </div>
+  <div class="chord-list">
+    <table>
+      <thead><tr><th>#</th><th>Tiempo</th><th>Beat</th><th>Acorde</th><th>Letra</th></tr></thead>
+      <tbody id="chordBody"></tbody>
+    </table>
+  </div>
+  <div class="preview-json" id="jsonPreview"></div>
+  <button class="btn" id="downloadBtn">⬇️ Descargar JSON</button>
+  <button class="btn secondary" id="copyBtn">📋 Copiar JSON</button>
+</div>
+
+<script>
+// =============================================
+// TAB SWITCHING
+// =============================================
+function showTab(name) {
+  ['YouTube','MIDI'].forEach(t => {
+    document.getElementById('tab'+t).classList.toggle('active', t === name);
+    document.getElementById('content'+t).classList.toggle('active', t === name);
+  });
+}
+
+// =============================================
+// YOUTUBE
+// =============================================
+let ytSelectedFormat = {format:'mp3', quality:'best'};
+let ytVideoInfo = null;
+let ytDownloadId = null;
+
+async function ytSearch() {
+  const query = document.getElementById('ytSearchQuery').value.trim();
+  if (!query) return;
+  const btn = document.getElementById('ytSearchBtn');
+  btn.textContent = '...';
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/api/yt/search', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query})
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    renderYtSearchResults(data.videos || []);
+  } catch(e) {
+    alert('Error buscando: ' + e.message);
+  } finally {
+    btn.textContent = '🔍';
+    btn.disabled = false;
+  }
+}
+
+function renderYtSearchResults(videos) {
+  const container = document.getElementById('ytSearchResults');
+  if (!videos.length) {
+    container.innerHTML = '<div style="padding:12px;color:#666">Sin resultados</div>';
+    container.classList.add('visible');
+    return;
+  }
+  container.innerHTML = videos.map(v => {
+    const dur = v.duration ? formatDuration(v.duration) : '';
+    return `<div class="yt-search-item" onclick="selectYtVideo(${JSON.stringify(v).replace(/"/g, '&quot;')})">
+      <div class="thumb">🎵</div>
+      <div class="info">
+        <div class="title">${escHtml(v.title)}</div>
+        <div class="meta">${escHtml(v.uploader)}</div>
+      </div>
+      <div class="duration">${dur}</div>
+    </div>`;
+  }).join('');
+  container.classList.add('visible');
+}
+
+function selectYtVideo(video) {
+  ytVideoInfo = video;
+  document.getElementById('ytTitle').textContent = video.title;
+  document.getElementById('ytMeta').textContent = `${formatDuration(video.duration)} · ${video.uploader || ''}`;
+  document.getElementById('ytInfo').classList.add('visible');
+  document.getElementById('ytPreviewBtn').style.display = 'inline-block';
+  document.getElementById('ytDownloadBtn').style.display = 'inline-block';
+  document.getElementById('ytTransposeSection').style.display = 'flex';
+  document.getElementById('ytUrlRow').style.display = 'flex';
+  document.getElementById('ytUrl').value = video.url;
+  document.getElementById('ytSearchResults').classList.remove('visible');
+  document.getElementById('ytLrcSection').style.display = 'block';
+  // Limpiar resultados anteriores
+  const oldPanel = document.getElementById('ytChordPanel');
+  if (oldPanel) oldPanel.remove();
+}
+
+function updateTransposeDisplay(val) {
+  const d = document.getElementById('ytTransposeDisplay');
+  d.textContent = (val > 0 ? '+' : '') + val;
+  d.style.color = val == 0 ? '#7fff7f' : val < 0 ? '#ff7f7f' : '#7fff7f';
+}
+
+function showManualUrl() {
+  document.getElementById('ytSearchResults').classList.remove('visible');
+  document.getElementById('ytUrl').value = '';
+  ytVideoInfo = null;
+  ytEditedChords = null;
+  document.getElementById('ytInfo').classList.remove('visible');
+  document.getElementById('ytDownloadBtn').style.display = 'none';
+  document.getElementById('ytPreviewBtn').style.display = 'none';
+  const panel = document.getElementById('ytChordPanel');
+  if (panel) panel.remove();
+}
+
+function formatDuration(s) {
+  if (!s) return '';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+
+function selectFormat(btn) {
+  document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  ytSelectedFormat = {
+    format: btn.dataset.format,
+    quality: btn.dataset.quality
+  };
+}
+
+async function ytFetch() {
+  const url = document.getElementById('ytUrl').value.trim().replace(/\?si=[^&]*/g, '');
+  if (!url) return;
+  const btn = document.getElementById('ytFetchBtn');
+  btn.textContent = 'Buscando…';
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/api/yt/info', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url})
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    ytVideoInfo = data;
+    document.getElementById('ytTitle').textContent = data.title;
+    document.getElementById('ytMeta').textContent = `${data.duration} · ${data.uploader || ''}`;
+    document.getElementById('ytInfo').classList.add('visible');
+    document.getElementById('ytPreviewBtn').style.display = 'inline-block';
+    document.getElementById('ytDownloadBtn').style.display = 'inline-block';
+    // Limpiar resultados anteriores
+    const oldPanel = document.getElementById('ytChordPanel');
+    if (oldPanel) oldPanel.remove();
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.textContent = 'Buscar';
+    btn.disabled = false;
+  }
+}
+
+// =============================================
+// YOUTUBE PREVIEW CHORDS (full workflow)
+// =============================================
+let ytEditedChords = null; // user-edited chords
+
+async function ytPreview() {
+  if (!ytVideoInfo || !(ytVideoInfo.webpage_url || ytVideoInfo.url)) {
+    alert('Busca y selecciona una canción primero');
+    return;
+  }
+  const btn = document.getElementById('ytPreviewBtn');
+  const progress = document.getElementById('ytProgress');
+  const progressText = document.getElementById('ytProgressText');
+  const progressFill = document.getElementById('ytProgressFill');
+  const transpose = parseInt(document.getElementById('ytTransposeSlider').value);
+  const offset = parseFloat(document.getElementById('ytOffset').value) || 0;
+
+  btn.disabled = true;
+  btn.textContent = 'Detectando...';
+  progress.classList.add('visible');
+  progressText.textContent = '🎸 Detectando acordes (90s preview)...';
+  progressFill.style.width = '30%';
+
+  try {
+    const resp = await fetch('/api/yt/preview', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        url: ytVideoInfo.url || ytVideoInfo.webpage_url,
+        transpose: transpose,
+        // Fixed window for better precision: 1.0 seconds
+        window_s: 1.0,
+        hop_s: 0.5,
+        offset: offset,
+        detect: true
+      })
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || 'Error en la detección');
+    }
+    const data = await resp.json();
+    progressFill.style.width = '100%';
+
+    if (data.chords && data.chords.length > 0) {
+      renderResults(data);
+      progressText.textContent = `✅ ${data.chords.length} acordes detectados (Preview)`;
+    } else {
+      progressText.textContent = '⚠️ No se detectaron acordes';
+    }
+  } catch(e) {
+    progressText.textContent = 'Error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🎸 Preview Acordes';
+  }
+}
+
+async function ytRePreview() {
+  // Re-run preview with current transpose
+  if (!ytVideoInfo) return;
+  const btn = document.getElementById('ytPreviewBtn');
+  btn.disabled = true;
+  const panel = document.getElementById('ytChordPanel');
+  if (panel) panel.remove();
+  await ytPreview();
+}
+
+async function ytDownload() {
+  if (!ytVideoInfo || !(ytVideoInfo.webpage_url || ytVideoInfo.url)) {
+    alert('Busca y selecciona una canción primero');
+    return;
+  }
+  const btn = document.getElementById('ytDownloadBtn');
+  btn.style.display = 'none';
+  const progress = document.getElementById('ytProgress');
+  const progressText = document.getElementById('ytProgressText');
+  const progressFill = document.getElementById('ytProgressFill');
+  progress.classList.add('visible');
+  progressText.textContent = 'Descargando...';
+  progressFill.style.width = '10%';
+
+  const hasEditedChords = ytEditedChords && ytEditedChords.length > 0;
+
+  try {
+    const resp = await fetch('/api/yt/download', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        url: ytVideoInfo.url || ytVideoInfo.webpage_url,
+        format: ytSelectedFormat.format,
+        quality: ytSelectedFormat.quality,
+        detect_chords: true, // Always detect full song on download
+        transpose: parseInt(document.getElementById('ytTransposeSlider').value),
+        offset: parseFloat(document.getElementById('ytOffset').value) || 0
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || 'Error en la descarga');
+    }
+
+    const data = await resp.json();
+    progressFill.style.width = '100%';
+    progressText.textContent = '¡Descargado!';
+
+    // Show common results panel
+    renderResults(data);
+
+    // Botón de descarga de MP3
+    const dlUrl = '/api/yt/file/' + encodeURIComponent(data.filename);
+    const displayName = data.filename.replace(/_transpose[+-]?\d+/, '').replace(/\.mp3$/, '') + '.mp3';
+    const dlBtn = document.createElement('a');
+    dlBtn.href = dlUrl;
+    dlBtn.target = '_blank';
+    dlBtn.rel = 'noopener noreferrer';
+    dlBtn.className = 'btn secondary';
+    dlBtn.style.marginTop = '8px';
+    dlBtn.style.display = 'inline-block';
+    dlBtn.textContent = '📥 ' + displayName;
+    progress.parentNode.insertBefore(dlBtn, progress.nextSibling);
+
+    if (data.chord_error) {
+      progressText.textContent = '⚠️ Detección de acordes falló: ' + data.chord_error;
+    }
+
+  } catch(e) {
+    progressText.textContent = 'Error: ' + e.message;
+  }
+}
+
+function showYtChordResults(data, editable=false) {
+  // Crear panel de acordes detectados
+  const container = document.getElementById('ytProgress').parentNode;
+  let panel = document.getElementById('ytChordPanel');
+  if (panel) panel.remove();
+
+  panel = document.createElement('div');
+  panel.id = 'ytChordPanel';
+  panel.className = 'yt-chord-panel';
+
+  const transpose = parseInt(document.getElementById('ytTransposeSlider').value);
+  const transposeNote = transpose !== 0 ? ` (transpuesto ${transpose > 0 ? '+' : ''}${transpose})` : '';
+
+  let actionsHtml = '';
+  if (editable) {
+    actionsHtml = `
+      <div class="yt-panel-actions">
+        <button class="btn" style="background:#e67e22" onclick="ytRePreview()">🔄 Re-detectar</button>
+        <button class="btn" onclick="saveEditedChords()">💾 Guardar Cambios</button>
+      </div>
+      <div class="section-title">🎸 Acordes detectados${transposeNote} — haz clic para editar</div>
+      <div class="chord-list-yt" id="chordListYt" data-editable="true"></div>
+    `;
+  } else {
+    actionsHtml = `
+      <div class="section-title">🎸 Acordes detectados (${data.chords.length})</div>
+      <div class="chord-list-yt" id="chordListYt"></div>
+    `;
+  }
+
+  panel.innerHTML = `
+    ${actionsHtml}
+    <div class="lrc-section">
+      <div class="section-title">📝 Letra LRC (opcional)</div>
+      <div class="yt-lrc-upload" id="ytLrcUploader" onclick="document.getElementById('ytLrcFileInput').click()">
+        <span id="ytLrcFilename">📄 Subir archivo .lrc</span>
+      </div>
+      <input type="file" id="ytLrcFileInput" accept=".lrc,.txt" style="display:none" onchange="handleYtLrcFile(this.files[0])" />
+      <div id="ytLrcPreview"></div>
+      <textarea id="ytLrcText" placeholder="...o pega la letra aquí: [00:00.00]Letra" rows="4" style="margin-top:8px"></textarea>
+    </div>
+    <button class="btn" onclick="generateYtJson()">🔗 Generar JSON</button>
+    <div class="preview-json" id="ytJsonPreview"></div>
+    <button class="btn secondary" id="ytDownloadJsonBtn" style="display:none" onclick="downloadYtJson()">⬇️ Descargar JSON</button>
+  `;
+  container.appendChild(panel);
+
+  // Guardar acordes para uso posterior
+  window._lastYtChords = data.chords;
+  window._lastYtDuration = data.duration;
+  window._ytChordEditable = editable;
+
+  // Renderizar tabla de acordes
+  renderYtChordTable(data.chords, data.duration, editable);
+}
+
+function renderYtChordTable(chords, duration, editable=false) {
+  const tbody = document.getElementById('chordListYt');
+  if (!tbody) return;
+  if (!editable) {
+    tbody.innerHTML = chords.map((c, i) =>
+      `<div class="chord-row"><span class="chord-num">${i+1}</span><span class="chord-time">${formatTime(c.time)}</span><span class="chord-name">${c.chord}</span></div>`
+    ).join('');
+  } else {
+    tbody.innerHTML = chords.map((c, i) =>
+      `<div class="chord-row">
+        <span class="chord-num">${i+1}</span>
+        <span class="chord-time">${formatTime(c.time)}</span>
+        <input class="chord-name-input" data-idx="${i}" value="${c.chord}" onclick="event.stopPropagation()" onchange="onChordEdit(${i}, this.value)" />
+        <button class="chord-del-btn" onclick="deleteChord(${i})" title="Eliminar">✕</button>
+      </div>`
+    ).join('');
+  }
+}
+
+function onChordEdit(idx, newValue) {
+  if (ytEditedChords && ytEditedChords[idx]) {
+    ytEditedChords[idx].chord = newValue;
+  }
+}
+
+function deleteChord(idx) {
+  if (!ytEditedChords) return;
+  ytEditedChords.splice(idx, 1);
+  renderYtChordTable(ytEditedChords, window._lastYtDuration, true);
+}
+
+function saveEditedChords() {
+  if (!ytEditedChords) return;
+  // Update the global chords
+  window._lastYtChords = ytEditedChords.map(c => ({...c}));
+  const count = ytEditedChords.length;
+  // Show confirmation
+  const panel = document.getElementById('ytChordPanel');
+  const msg = document.createElement('div');
+  msg.style = 'color:#7fff7f;margin:8px 0;font-weight:bold;';
+  msg.textContent = `✅ ${count} acordes guardados`;
+  panel.insertBefore(msg, panel.querySelector('.lrc-section'));
+  setTimeout(() => msg.remove(), 2000);
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+let ytFinalJson = null;
+
+function handleYtLrcFile(file) {
+  if (!file) return;
+  document.getElementById('ytLrcFilename').textContent = '📄 ' + file.name;
+  document.getElementById('ytLrcUploader').classList.add('has-file');
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('ytLrcText').value = e.target.result;
+    document.getElementById('ytLrcPreview').textContent = '✅ ' + file.name + ' cargado';
+  };
+  reader.readAsText(file);
+}
+
+function generateYtJson() {
+  const lrcText = document.getElementById('ytLrcText').value.trim();
+  const offset = parseFloat(document.getElementById('ytOffset').value) || 0;
+  let chords = (lastData && lastData.chords) ? lastData.chords : (window._lastYtChords || []);
+  
+  if (!chords || chords.length === 0) {
+    alert('No hay acordes para mezclar. Primero haz Preview o Descarga.');
+    return;
+  }
+
+  // Aplicar offset a los acordes
+  if (offset !== 0) {
+    chords = chords.map(c => ({...c, time: Math.max(0, c.time + offset)}));
+  }
+  
+  let resultData = {
+    chords: chords,
+    duration: window._lastYtDuration || (ytVideoInfo ? ytVideoInfo.duration_s : 0),
+    bpm: (lastData && lastData.bpm) ? lastData.bpm : 0,
+    source: (lastData && lastData.source) ? lastData.source : 'youtube'
+  };
+
+  if (lrcText) {
+    const lrcOffset = parseFloat(document.getElementById('ytLrcOffset').value) || 0;
+    const lyrics = parseLrcText(lrcText, lrcOffset);
+    const merged = mergeChordsAndLyrics(chords, lyrics);
+    resultData.merged = merged;
+    resultData.lyrics_count = lyrics.length;
+    resultData.json = merged;
+  } else {
+    resultData.json = chords.map(c => ({time: c.time, chord: c.chord}));
+  }
+
+  renderResults(resultData);
+}
+
+function parseLrcText(text, offsetSeconds = 0) {
+  const lines = text.split('\n');
+  const result = [];
+  for (const line of lines) {
+    const m = line.match(/\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\](.*)/);
+    if (m) {
+      const min = parseInt(m[1]), sec = parseInt(m[2]), ms = parseInt(m[3]||'0');
+      // Apply offset: negative = show lyric earlier (ahead of audio)
+      const time = Math.max(0, min * 60 + sec + ms / (m[3] && m[3].length === 3 ? 1000 : 100) + offsetSeconds);
+      result.push({time, text: m[4].trim()});
+    }
+  }
+  return result.sort((a,b) => a.time - b.time);
+}
+
+function mergeChordsAndLyrics(chords, lyrics) {
+  // Crear una lista de todos los eventos (acordes y letras)
+  const events = [];
+  chords.forEach(c => events.push({time: c.time, chord: c.chord, type: 'chord'}));
+  lyrics.forEach(l => events.push({time: l.time, lyric: l.text, type: 'lyric'}));
+  
+  // Ordenar por tiempo
+  events.sort((a, b) => a.time - b.time);
+  
+  const merged = [];
+  let currentChord = chords.length > 0 ? chords[0].chord : 'N';
+  
+  events.forEach(e => {
+    if (e.type === 'chord') {
+      currentChord = e.chord;
+      merged.push({time: e.time, chord: e.chord, lyric: ''});
+    } else {
+      // Es una letra, la asociamos al acorde actual
+      merged.push({time: e.time, chord: currentChord, lyric: e.lyric});
+    }
+  });
+  
+  // Opcional: Eliminar duplicados exactos si el tiempo y contenido coinciden
+  return merged;
+}
+
+
+// =============================================
+// MIDI
+// =============================================
+const midiInput = document.getElementById('midiInput');
+const lrcInput = document.getElementById('lrcInput');
+let midiFile = null, lrcFile = null, lastData = null;
+
+midiInput.addEventListener('change', e => { if(e.target.files[0]) setMidiFile(e.target.files[0]); });
+lrcInput.addEventListener('change', e => { if(e.target.files[0]) setLrcFile(e.target.files[0]); });
+
+function setMidiFile(file) {
+  midiFile = file;
+  document.getElementById('midiFilename').textContent = file.name;
+  document.getElementById('midiUploader').classList.add('has-file');
+  document.getElementById('midiTransposeSection').style.display = 'flex';
+  tryProcess();
+}
+
+function updateMidiTransposeDisplay(val) {
+  const d = document.getElementById('midiTransposeDisplay');
+  d.textContent = (val > 0 ? '+' : '') + val;
+  d.style.color = val == 0 ? '#7fff7f' : val < 0 ? '#ff7f7f' : '#7fff7f';
+}
+function setLrcFile(file) { lrcFile = file; document.getElementById('lrcFilename').textContent = file.name; document.getElementById('lrcUploader').classList.add('has-file'); tryProcess(); }
+
+function setProgress(pct, text) {
+  document.getElementById('progressWrap').classList.add('visible');
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = text;
+}
+function showError(msg) {
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorMsg').classList.add('visible');
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('progressWrap').classList.remove('visible');
+}
+function hideError() { document.getElementById('errorMsg').classList.remove('visible'); }
+
+async function tryProcess() {
+  if (!midiFile) return;
+  hideError();
+  setProgress(10, 'Preparando…');
+  const formData = new FormData();
+  formData.append('midi', midiFile);
+  if (lrcFile) formData.append('lrc', lrcFile);
+  formData.append('offset', document.getElementById('midiOffset').value);
+  formData.append('transpose', document.getElementById('midiTransposeSlider').value);
+  setProgress(30, 'Enviando…');
+  try {
+    const resp = await fetch('/api/chordtime', { method: 'POST', body: formData });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || 'Error del servidor');
+    }
+    setProgress(80, 'Procesando…');
+    const data = await resp.json();
+    setProgress(100, '¡Listo!');
+    setTimeout(() => document.getElementById('progressWrap').classList.remove('visible'), 600);
+    renderResults(data);
+  } catch(e) { showError(e.message); }
+}
+
+function renderResults(data) {
+  // Normalizar lastData para asegurar estructura completa
+  lastData = {
+    // Mantener todos los campos originales
+    ...data,
+    // Asegurar campos críticos
+    chords: data.chords || [],
+    duration: data.duration || 0,
+    bpm: data.bpm || 0,
+    source: data.source || 'unknown',
+    json: data.json || data.chords || [],
+    // Si no hay json explícito, crearlo desde chords
+    ...(!data.json && data.chords ? {json: data.chords} : {})
+  };
+  document.getElementById('statChords').textContent = data.chords.length;
+  document.getElementById('statDuration').textContent = formatTime(data.duration);
+  document.getElementById('statBPM').textContent = data.bpm || '—';
+  
+  // Display detection method
+  let sourceText = '—';
+  if (data.source === 'chordmini_api') sourceText = 'ChordMini API';
+  else if (data.source === 'audio') sourceText = 'Librosa';
+  else if (data.source === 'midi') sourceText = 'MIDI';
+  else if (data.source === 'provided') sourceText = 'Proporcionado';
+  else if (data.source === 'preview') sourceText = 'Vista previa';
+  document.getElementById('statSource').textContent = sourceText;
+  
+  if (data.lyrics_count !== undefined) {
+    document.getElementById('statLyrics').textContent = data.lyrics_count;
+    document.getElementById('statLyricsWrap').style.display = 'block';
+  }
+  const body = document.getElementById('chordBody');
+  body.innerHTML = '';
+  const chordSource = data.merged || data.chords || [];
+  chordSource.forEach((m, i) => {
+    const tr = document.createElement('tr');
+    if (m.lyric) tr.classList.add('has-lyric');
+    
+    // Calculate beat if BPM is available and beat isn't already calculated
+    let beatDisplay = m.beat || '—';
+    if (beatDisplay === '—' && lastData.bpm && lastData.bpm > 0) {
+      const beat = (m.time * lastData.bpm / 60.0) + 1.0;
+      beatDisplay = beat.toFixed(1);
+    }
+    
+    tr.innerHTML = `<td>${i+1}</td><td class="time">${m.time.toFixed(3)}s</td><td class="beat">Beat ${beatDisplay}</td><td class="chord">${m.chord||'—'}</td><td class="lyric">${m.lyric||''}</td>`;
+    body.appendChild(tr);
+  });
+  document.getElementById('jsonPreview').textContent = JSON.stringify(getCompleteChordData(), null, 2);
+  document.getElementById('results').classList.add('visible');
+  console.log('✅ Datos cargados. Usa getCompleteChordData() para obtener JSON con BPM');
+}
+
+function getCompleteChordData() {
+  if (!lastData) return null;
+  return {
+    chords: lastData.json || lastData.chords || [],
+    duration: lastData.duration || 0,
+    bpm: lastData.bpm || 0,
+    source: lastData.source || 'unknown',
+    timestamp: new Date().toISOString(),
+    metadata: {
+      chordCount: lastData.chords ? lastData.chords.length : 0,
+      hasLyrics: !!(lastData.merged && lastData.merged.some(m => m.lyric))
+    }
+  };
+}
+
+function formatTime(s) { const m=Math.floor(s/60); const sec=Math.floor(s%60); return `${m}:${sec.toString().padStart(2,'0')}`; }
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const downloadData = getCompleteChordData();
+  if (!downloadData) return;
+  let filename = 'chordtime';
+  if (lastData && lastData.title) {
+    filename = lastData.title.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_');
+  } else if (midiFile) {
+    filename = midiFile.name.replace(/\.mid[i]?$/, '').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_');
+  }
+  const blob = new Blob([JSON.stringify(downloadData, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = filename + '.json'; a.click(); URL.revokeObjectURL(a.href);
+});
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  const copyData = getCompleteChordData();
+  if (!copyData) return;
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(copyData, null, 2));
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ ¡Copiado!';
+    setTimeout(() => btn.textContent = '📋 Copiar JSON', 2000);
+  } catch {}
+});
+</script>
+</body>
+</html>

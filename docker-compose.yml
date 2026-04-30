@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  chordtime:
+    image: saronni-hub/chordtime:latest
+    container_name: chordtime-server
+    platform: linux/amd64
+    ports:
+      - "8193:8193"
+    environment:
+      - CHORDMINI_URL=http://chordmini-backend:8080
+      - DOWNLOAD_DIR=/downloads
+    volumes:
+      - ./downloads:/downloads
+    networks:
+      - chordtime_network
+    restart: unless-stopped
+
+networks:
+  chordtime_network:
+    name: chordtime_default
+    external: true
