@@ -25,7 +25,6 @@ RUN curl -sL "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/f
 COPY requirements.txt .
 RUN pip install --no-cache-dir librosa numpy soundfile pretty_midi mutagen requests
 RUN pip install --no-cache-dir -U "yt-dlp[default]"
-RUN pip install --no-cache-dir madmom
 
 FROM python:3.12-slim-bookworm
 
@@ -44,7 +43,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir librosa numpy soundfile pretty_midi mutagen requests
 RUN pip install --no-cache-dir -U "yt-dlp[default]"
-RUN pip install --no-cache-dir madmom
 
 COPY . .
 
