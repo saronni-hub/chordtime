@@ -892,8 +892,8 @@ class Handler(BaseHTTPRequestHandler):
                 tmp_path = f"/tmp/yt_preview_{hash(url) & 0xffffff}.mp3"
                 try:
                     cmd = ['yt-dlp', '-x', '--audio-format', 'mp3',
-                           '--user-agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                           '--extractor-args', 'youtube:player_client=android',
+                           '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                           '--extractor-args', 'youtube:player_client=web',
                            '--no-check-certificates',
                            '--no-playlist',
                            '--force-ipv4',
@@ -989,8 +989,8 @@ class Handler(BaseHTTPRequestHandler):
                 if fmt == 'mp3':
                     output_tmpl = out_base + '.%(ext)s'
                     cmd = ['yt-dlp', '-x', '--audio-format', 'mp3',
-                           '--user-agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                           '--extractor-args', 'youtube:player_client=android',
+                           '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                           '--extractor-args', 'youtube:player_client=web',
                            '--no-check-certificates',
                            '--no-playlist',
                            '--force-ipv4',
@@ -999,8 +999,8 @@ class Handler(BaseHTTPRequestHandler):
                     height = quality
                     output_tmpl = out_base + '.%(ext)s'
                     cmd = ['yt-dlp', '-f', f'bestvideo[height<={height}]+bestaudio/best[height<={height}]',
-                           '--user-agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                           '--extractor-args', 'youtube:player_client=android',
+                           '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                           '--extractor-args', 'youtube:player_client=web',
                            '--no-check-certificates',
                            '--no-playlist',
                            '--force-ipv4',
