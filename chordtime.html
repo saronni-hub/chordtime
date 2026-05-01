@@ -335,6 +335,7 @@
     </div>
     <button class="btn" id="ytPreviewBtn" onclick="ytPreview()" style="display:none; background:#e67e22">🎸 Preview Acordes</button>
     <button class="btn" id="ytDownloadBtn" onclick="ytDownload()" style="display:none">⬇️ Descargar MP3</button>
+    <a class="btn" href="https://www.lyricsify.com" target="_blank" rel="noopener" style="display:none; background:#9b59b6; text-decoration:none;">🎤 Buscar Letras</a>
     <div class="yt-download-progress" id="ytProgress">
       <div class="progress-text" id="ytProgressText">Descargando…</div>
       <div class="progress-bar"><div class="progress-fill" id="ytProgressFill"></div></div>
@@ -492,6 +493,7 @@ function selectYtVideo(video) {
   document.getElementById('ytInfo').classList.add('visible');
   document.getElementById('ytPreviewBtn').style.display = 'inline-block';
   document.getElementById('ytDownloadBtn').style.display = 'inline-block';
+  document.querySelector('a[href="https://www.lyricsify.com"]').style.display = 'inline-block';
   document.getElementById('ytTransposeSection').style.display = 'flex';
   document.getElementById('ytUrlRow').style.display = 'flex';
   document.getElementById('ytUrl').value = video.url;
@@ -561,6 +563,7 @@ async function ytFetch() {
     document.getElementById('ytInfo').classList.add('visible');
     document.getElementById('ytPreviewBtn').style.display = 'inline-block';
     document.getElementById('ytDownloadBtn').style.display = 'inline-block';
+    document.querySelector('a[href="https://www.lyricsify.com"]').style.display = 'inline-block';
     // Limpiar resultados anteriores
     const oldPanel = document.getElementById('ytChordPanel');
     if (oldPanel) oldPanel.remove();
