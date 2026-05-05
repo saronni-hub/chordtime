@@ -36,7 +36,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
+COPY --from=builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
+COPY --from=builder /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 
 WORKDIR /app
 
