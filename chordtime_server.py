@@ -893,7 +893,6 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     cmd = ['yt-dlp', '-x', '--audio-format', 'mp3',
                            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                           '--extractor-args', 'youtube:player_client=web',
                            '--no-check-certificates',
                            '--no-playlist',
                            '--force-ipv4',
@@ -990,17 +989,14 @@ class Handler(BaseHTTPRequestHandler):
                     output_tmpl = out_base + '.%(ext)s'
                     cmd = ['yt-dlp', '-x', '--audio-format', 'mp3',
                            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                           '--extractor-args', 'youtube:player_client=web',
                            '--no-check-certificates',
                            '--no-playlist',
                            '--force-ipv4',
                            '-o', output_tmpl, url]
                 else:
-                    height = quality
                     output_tmpl = out_base + '.%(ext)s'
                     cmd = ['yt-dlp',
                            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                           '--extractor-args', 'youtube:player_client=web',
                            '--no-check-certificates',
                            '--no-playlist',
                            '--force-ipv4',
