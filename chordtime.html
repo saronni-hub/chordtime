@@ -989,6 +989,7 @@ function renderResults(data) {
   // Display detection method
   let sourceText = '—';
   if (data.source === 'chordmini_api') sourceText = 'ChordMini API';
+  else if (data.source === 'chordmini_local') sourceText = 'Chord-CNN-LSTM';
   else if (data.source === 'audio') sourceText = 'Librosa';
   else if (data.source === 'midi') sourceText = 'MIDI';
   else if (data.source === 'provided') sourceText = 'Proporcionado';

@@ -396,12 +396,12 @@ def apply_pitch_shift(audio_path, n_semitones, sr=22050):
         return audio_path
     
     print(f"[PitchShift] {n_semitones:+d} semitonos → {audio_path}", file=__import__('sys').stderr)
-    y, orig_sr = librosa.load(audio_path, sr=sr, mono=False)
+    y, orig_sr = librosa.load(audio_path, sr=None, mono=False)
     y_shifted = librosa.effects.pitch_shift(y, sr=orig_sr, n_steps=n_semitones)
     
     fd, tmp_path = tempfile.mkstemp(suffix='.mp3')
     os.close(fd)
-    sf.write(tmp_path, y_shifted.T, orig_sr, format='MP3')
+    sf.write(tmp_path, y_shifted.T, orig_sr, format='MP3', subtype='MPEG_LAYER_III')
     print(f"[PitchShift] Guardado en: {tmp_path}", file=__import__('sys').stderr)
     return tmp_path
 
@@ -457,7 +457,15 @@ def detect_chords_via_local_chordmini(audio_path):
         raise RuntimeError(data.get('error', 'ChordMiniApp error'))
     
     duration = data.get('duration', 0)
-    bpm = 0.0
+    
+    # Detect BPM from audio (same approach as detect_chords_via_api)
+    try:
+        import librosa
+        y, sr = librosa.load(audio_path, sr=22050)
+        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+        bpm = float(tempo[0]) if len(tempo) > 0 else 0.0
+    except Exception:
+        bpm = 0.0
     
     return [
         {'time': round(c['start'], 3), 'chord': normalize_chord_name(c['chord']), 'confidence': c.get('confidence', 1)}
@@ -963,31 +971,26 @@ class Handler(BaseHTTPRequestHandler):
                 if not url:
                     raise ValueError("Falta URL")
 
-                # Get video title first for filename
-                title_cmd = ['yt-dlp', '--dump-json', '--no-playlist', '--flat-playlist',
-                             '--extractor-args', 'youtube:player_client=web_safari',
-                             '--js-runtimes', 'deno',
-                             '--force-ipv4', url]
+                # Get video title first for filename (simpler command that works on Synology)
+                title_cmd = ['yt-dlp', '--print', 'title', '--print', 'uploader',
+                             '--no-playlist', '--force-ipv4', url]
                 title_result = subprocess.run(title_cmd, capture_output=True, text=True, timeout=30)
                 video_title = 'audio'
                 raw_title = 'audio'
                 video_artist = None
-                if title_result.returncode == 0:
-                    try:
-                        info = json.loads(title_result.stdout.strip().splitlines()[0])
-                        raw_title = info.get('title', 'audio')
-                        video_artist = info.get('artist') or info.get('uploader') or info.get('creator')
-                        # Clean title for filesystem
-                        video_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', raw_title).strip()[:80]
-                    except:
-                        pass
+                if title_result.returncode == 0 and title_result.stdout.strip():
+                    lines = title_result.stdout.strip().splitlines()
+                    raw_title = lines[0].strip() if len(lines) > 0 else 'audio'
+                    video_artist = lines[1].strip() if len(lines) > 1 else None
+                    # Clean title for filesystem
+                    video_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', raw_title).strip()[:80]
 
                 safe_name = re.sub(r'[^\w\-_.]', '_', video_title)
                 out_base = os.path.join(DOWNLOAD_DIR, safe_name)
 
                 if fmt == 'mp3':
                     output_tmpl = out_base + '.%(ext)s'
-                    cmd = ['yt-dlp', '-x', '--audio-format', 'mp3',
+                    cmd = ['yt-dlp', '-x', '--audio-format', 'mp3', '--audio-quality', '0',
                            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                            '--no-check-certificates',
                            '--no-playlist',
@@ -1022,6 +1025,17 @@ class Handler(BaseHTTPRequestHandler):
 
                 if not downloaded:
                     raise Exception("No se encontró el archivo descargado")
+
+                # Rename to use song title as filename
+                ext = os.path.splitext(downloaded)[1] or '.mp3'
+                target_name = safe_name + ext
+                target_path = os.path.join(DOWNLOAD_DIR, target_name)
+                if downloaded != target_path:
+                    if os.path.exists(target_path):
+                        try: os.remove(target_path)
+                        except: pass
+                    os.rename(downloaded, target_path)
+                    downloaded = target_path
 
                 filename = os.path.basename(downloaded)
                 response = {'filename': filename, 'path': downloaded}
