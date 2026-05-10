@@ -600,9 +600,15 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
 
-        # Serve HTML - old (original)
+        # Serve HTML
         if parsed.path in ('/', '/chordtime.html', '/chordtimev2.html'):
-            path = '/app/chordtime.html'
+            for p in ['chordtime.html', os.path.join(os.path.dirname(__file__), 'chordtime.html'), '/app/chordtime.html']:
+                if os.path.exists(p):
+                    path = p
+                    break
+            else:
+                self.send_error(404)
+                return
             if os.path.exists(path):
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/html')

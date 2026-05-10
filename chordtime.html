@@ -230,17 +230,20 @@
   .chord-list .has-lyric td { background: #0d1f3e; }
 
   .preview-json {
+    display: none;
     background: #0d1f3e;
+    border: 1px solid #333;
     border-radius: 12px;
     padding: 16px;
     font-family: monospace;
     font-size: 0.8em;
-    color: #aaa;
-    max-height: 250px;
+    color: #7ec8e3;
+    max-height: 300px;
+    width: 100%;
+    resize: vertical;
     overflow-y: auto;
     margin-bottom: 16px;
     white-space: pre;
-    display: none;
   }
   .preview-json.visible { display: block; }
 
@@ -295,7 +298,8 @@
   .yt-lrc-upload.has-file { border-color: #7fff7f; color: #7fff7f; }
   #ytLrcPreview { color: #7fff7f; font-size: 0.8em; margin-bottom: 4px; min-height: 18px; }
 
-  #ytJsonPreview { background: #1a1a1a; color: #7ec8e3; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 0.8em; max-height: 300px; overflow-y: auto; white-space: pre; margin: 15px 0; }
+  #ytJsonPreview { background: #1a1a1a; color: #7ec8e3; padding: 12px; border: 1px solid #444; border-radius: 6px; font-family: monospace; font-size: 0.8em; max-height: 300px; width: 100%; resize: vertical; overflow-y: auto; white-space: pre; margin: 15px 0; display: none; }
+  #ytJsonPreview.visible { display: block; }
 </style>
 </head>
 <body>
@@ -419,7 +423,7 @@
       <tbody id="chordBody"></tbody>
     </table>
   </div>
-  <div class="preview-json" id="jsonPreview"></div>
+  <textarea class="preview-json" id="jsonPreview" placeholder="JSON generado..."></textarea>
   <button class="btn" id="downloadBtn">⬇️ Descargar JSON</button>
   <button class="btn secondary" id="copyBtn">📋 Copiar JSON</button>
 </div>
@@ -721,18 +725,22 @@ function showYtChordResults(data, editable=false) {
   const transposeNote = transpose !== 0 ? ` (transpuesto ${transpose > 0 ? '+' : ''}${transpose})` : '';
 
   let actionsHtml = '';
+  // Extract unique chords (excluding 'N')
+  const uniqueChords = [...new Set(data.chords.map(c => c.chord).filter(c => c && c !== 'N'))];
+  const chordPalette = uniqueChords.length > 0 ? ` — ${uniqueChords.join(' · ')}` : '';
+
   if (editable) {
     actionsHtml = `
       <div class="yt-panel-actions">
         <button class="btn" style="background:#e67e22" onclick="ytRePreview()">🔄 Re-detectar</button>
         <button class="btn" onclick="saveEditedChords()">💾 Guardar Cambios</button>
       </div>
-      <div class="section-title">🎸 Acordes detectados${transposeNote} — haz clic para editar</div>
+      <div class="section-title">🎸 Acordes detectados${transposeNote}${chordPalette} — haz clic para editar</div>
       <div class="chord-list-yt" id="chordListYt" data-editable="true"></div>
     `;
   } else {
     actionsHtml = `
-      <div class="section-title">🎸 Acordes detectados (${data.chords.length})</div>
+      <div class="section-title">🎸 Acordes detectados (${data.chords.length})${chordPalette}</div>
       <div class="chord-list-yt" id="chordListYt"></div>
     `;
   }
@@ -749,7 +757,7 @@ function showYtChordResults(data, editable=false) {
       <textarea id="ytLrcText" placeholder="...o pega la letra aquí: [00:00.00]Letra" rows="4" style="margin-top:8px"></textarea>
     </div>
     <button class="btn" onclick="generateYtJson()">🔗 Generar JSON</button>
-    <div class="preview-json" id="ytJsonPreview"></div>
+    <textarea class="preview-json" id="ytJsonPreview" placeholder="Presiona Generar JSON..." style="display:none"></textarea>
     <button class="btn secondary" id="ytDownloadJsonBtn" style="display:none" onclick="downloadYtJson()">⬇️ Descargar JSON</button>
   `;
   container.appendChild(panel);
@@ -1017,8 +1025,15 @@ function renderResults(data) {
     tr.innerHTML = `<td>${i+1}</td><td class="time">${m.time.toFixed(3)}s</td><td class="beat">Beat ${beatDisplay}</td><td class="chord">${m.chord||'—'}</td><td class="lyric">${m.lyric||''}</td>`;
     body.appendChild(tr);
   });
-  document.getElementById('jsonPreview').textContent = JSON.stringify(getCompleteChordData(), null, 2);
+  document.getElementById('jsonPreview').value = JSON.stringify(getCompleteChordData(), null, 2);
+  // Also populate the YouTube panel JSON editor if visible
+  const ytPreview = document.getElementById('ytJsonPreview');
+  if (ytPreview) {
+    ytPreview.value = typeof data.json !== 'undefined' ? JSON.stringify(data.json, null, 2) : JSON.stringify(data.chords.map(c => ({time: c.time, chord: c.chord})), null, 2);
+    ytPreview.style.display = 'block';
+  }
   document.getElementById('results').classList.add('visible');
+  document.getElementById('jsonPreview').classList.add('visible');
   console.log('✅ Datos cargados. Usa getCompleteChordData() para obtener JSON con BPM');
 }
 
