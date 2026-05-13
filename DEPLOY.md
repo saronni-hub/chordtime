@@ -45,7 +45,7 @@ Browser → saronni.myds.me:8193 → ChordTime Server (Docker)
 | Feature | Description |
 |---------|-------------|
 | 🎤 Buscar Letras | Opens lyricsify.com in new tab |
-| ✏️ Editar Acordes | Opens chordtime-edit.saronni.myds.me |
+| ✏️ Abrir Editor Timeline | Opens chordtime-edit.saronni.myds.me |
 | 🔄 Re-detectar | Re-runs chord detection on preview |
 | 🎚️ Transpose | Slider -12 to +12 semitones |
 | 📝 Letra LRC | Upload/ paste .lrc lyrics |
@@ -68,6 +68,14 @@ After detection, the section title shows unique chords:
 ```
 🎸 Acordes detectados (63) — Am · F · G · C · Dm · Em
 ```
+
+Main results panel also shows:
+
+```text
+Acordes usados (N): Am · F · G · C · Dm
+```
+
+This line is computed from unique non-`N` chords in `data.chords`.
 
 ---
 
@@ -239,7 +247,22 @@ sshpass -p 'PASSWORD' ssh -o StrictHostKeyChecking=no saronni@saronni.myds.me \
 ## Troubleshooting
 
 ### 504 Gateway Timeout
-If accessing through HTTP without port 8193, the request may hit Synology's default nginx (port 80), which doesn't serve ChordTime. **Always use port 8193.**
+`https://chordtime.saronni.myds.me` goes through Synology Reverse Proxy.
+
+For long preview/download operations, raise timeouts in the reverse proxy block for `chordtime.saronni.myds.me`:
+
+```nginx
+proxy_connect_timeout 60;
+proxy_read_timeout 600;
+proxy_send_timeout 600;
+proxy_pass http://localhost:8193;
+```
+
+Frontend now surfaces this explicitly when received:
+
+```text
+Timeout del proxy (504). Reintenta o usa URL directa con :8193
+```
 
 ### ChordTime returns "Vista previa" (not Chord-CNN-LSTM)
 ChordMiniApp is down or unreachable. Check:

@@ -396,13 +396,14 @@
     <div class="stat"><div class="value" id="statSource">—</div><div class="label">Método</div></div>
     <div class="stat" id="statLyricsWrap" style="display:none"><div class="value" id="statLyrics">0</div><div class="label">Letras</div></div>
   </div>
+  <div id="statChordSet" style="display:none; margin:10px 0 14px; color:#9ad0ff; font-size:0.92em;"></div>
   <div class="chord-list">
     <table>
       <thead><tr><th>#</th><th>Tiempo</th><th>Beat</th><th>Acorde</th><th>Letra</th></tr></thead>
       <tbody id="chordBody"></tbody>
     </table>
   </div>
-  <a class="btn" href="http://chordtime-edit.saronni.myds.me" target="_blank" rel="noopener" style="display:inline-block; background:#9b59b6; text-decoration:none; margin-bottom:16px;">✏️ Editar Acordes</a>
+  <button class="btn" id="openEditorBtn" style="display:inline-block; background:#9b59b6; margin-bottom:16px;">✏️ Abrir Editor Timeline</button>
   <button class="btn" id="downloadBtn">⬇️ Descargar JSON</button>
   <button class="btn secondary" id="copyBtn">📋 Copiar JSON</button>
 </div>
@@ -597,6 +598,7 @@ async function ytPreview() {
     });
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
+      if (resp.status === 504) throw new Error('Timeout del proxy (504). Reintenta o usa URL directa con :8193');
       throw new Error(err.error || 'Error en la detección');
     }
     const data = await resp.json();
@@ -658,6 +660,7 @@ async function ytDownload() {
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
+      if (resp.status === 504) throw new Error('Timeout del proxy (504). Reintenta o usa URL directa con :8193');
       throw new Error(err.error || 'Error en la descarga');
     }
 
@@ -981,6 +984,19 @@ function renderResults(data) {
   else if (data.source === 'provided') sourceText = 'Proporcionado';
   else if (data.source === 'preview') sourceText = 'Vista previa';
   document.getElementById('statSource').textContent = sourceText;
+
+  // Acordes usados (únicos)
+  const uniqueChords = [...new Set((data.chords || [])
+    .map(c => c && c.chord ? c.chord : null)
+    .filter(ch => ch && ch !== 'N'))];
+  const statChordSet = document.getElementById('statChordSet');
+  if (uniqueChords.length) {
+    statChordSet.style.display = 'block';
+    statChordSet.textContent = `Acordes usados (${uniqueChords.length}): ${uniqueChords.join(' · ')}`;
+  } else {
+    statChordSet.style.display = 'none';
+    statChordSet.textContent = '';
+  }
   
   if (data.lyrics_count !== undefined) {
     document.getElementById('statLyrics').textContent = data.lyrics_count;
@@ -1046,6 +1062,17 @@ document.getElementById('copyBtn').addEventListener('click', async () => {
     btn.textContent = '✅ ¡Copiado!';
     setTimeout(() => btn.textContent = '📋 Copiar JSON', 2000);
   } catch {}
+});
+
+document.getElementById('openEditorBtn').addEventListener('click', () => {
+  const project = getCompleteChordData();
+  if (!project) return;
+  const id = 'ct_' + Date.now();
+  try {
+    localStorage.setItem('chordtime_editor_project_' + id, JSON.stringify(project));
+  } catch {}
+  const url = `https://chordtime-edit.saronni.myds.me/#import=${encodeURIComponent(id)}`;
+  window.open(url, '_blank', 'noopener');
 });
 </script>
 </body>
